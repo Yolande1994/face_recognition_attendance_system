@@ -1,0 +1,2034 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>青星智能人脸识别验证系统</title>
+    <link rel="stylesheet" href="https://cdn.bootcdn.net/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="./public/face-api.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <style>
+        /* ========== 科幻风格 ========== */
+        @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700;900&family=Rajdhani:wght@300;400;500;600;700&display=swap');
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Orbitron', 'Microsoft YaHei', 'Rajdhani', sans-serif;
+        }
+
+        :root {
+            --neon-cyan: #00f0ff;
+            --neon-magenta: #ff00e5;
+            --neon-blue: #0080ff;
+            --neon-green: #00ff88;
+            --neon-red: #ff2a2a;
+            --neon-yellow: #ffdd00;
+            --neon-gray: #cccccc;
+            --dark-bg: #050a1a;
+            --deep-bg: #030712;
+            --card-bg: rgba(10, 20, 40, 0.75);
+            --card-deep-bg: rgba(8, 15, 30, 0.85);
+            --glass-border: rgba(0, 240, 255, 0.3);
+            --glass-border-active: rgba(0, 240, 255, 0.8);
+            --transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            --fast-transition: all 0.15s ease;
+        }
+
+        body {
+            min-height: 100vh;
+            background:
+                linear-gradient(135deg, var(--deep-bg) 0%, var(--dark-bg) 50%, #0f1a40 100%),
+                repeating-linear-gradient(0deg, rgba(0, 240, 255, 0.03) 0px, rgba(0, 240, 255, 0.03) 1px, transparent 1px, transparent 2px),
+                linear-gradient(rgba(0, 128, 255, 0.02) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 128, 255, 0.02) 1px, transparent 1px);
+            background-size: 100% 100%, 100% 2px, 30px 30px, 30px 30px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 30px 20px;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background:
+                radial-gradient(circle at 20% 30%, rgba(0, 240, 255, 0.12) 0%, transparent 50%),
+                radial-gradient(circle at 80% 70%, rgba(255, 0, 229, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 40% 80%, rgba(0, 255, 136, 0.08) 0%, transparent 50%);
+            z-index: -1;
+            animation: bgPulse 8s ease-in-out infinite alternate;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            animation: fadeDown 0.8s ease;
+            position: relative;
+            width: 100%;
+            max-width: 1400px;
+        }
+
+        .header h1 {
+            font-size: 2.8rem;
+            font-weight: 900;
+            margin-bottom: 12px;
+            letter-spacing: 3px;
+            background: linear-gradient(90deg, var(--neon-cyan), var(--neon-blue), var(--neon-cyan));
+            background-size: 200% 100%;
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            text-shadow: 0 0 30px rgba(0, 240, 255, 0.5);
+            font-family: 'Orbitron', sans-serif;
+            animation: titleGlow 3s ease-in-out infinite alternate;
+        }
+
+        .header p {
+            font-size: 1rem;
+            color: rgba(0, 240, 255, 0.8);
+            font-weight: 500;
+            letter-spacing: 2px;
+            text-shadow: 0 0 10px rgba(0, 240, 255, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+        }
+
+        .status-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.85rem;
+            font-family: 'Rajdhani', sans-serif;
+        }
+
+        .status-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: var(--neon-red);
+            box-shadow: 0 0 8px var(--neon-red);
+            animation: blink 1.5s ease-in-out infinite;
+        }
+
+        .status-dot.active {
+            background: var(--neon-green);
+            box-shadow: 0 0 8px var(--neon-green);
+        }
+
+        .corner-decoration {
+            position: absolute;
+            width: 40px;
+            height: 40px;
+            border: 2px solid var(--neon-cyan);
+        }
+
+        .corner-tl {
+            top: -10px;
+            left: -20px;
+            border-right: none;
+            border-bottom: none;
+            box-shadow: -5px -5px 15px rgba(0, 240, 255, 0.5);
+        }
+
+        .corner-tr {
+            top: -10px;
+            right: -20px;
+            border-left: none;
+            border-bottom: none;
+            box-shadow: 5px -5px 15px rgba(0, 136, 255, 0.5);
+            border-color: var(--neon-blue);
+        }
+
+        .main-container {
+            width: 100%;
+            max-width: 1400px;
+            display: grid;
+            grid-template-columns: 1.2fr 450px;
+            gap: 40px;
+            animation: fadeUp 0.8s ease;
+            margin-bottom: 30px;
+        }
+
+        .cyber-card {
+            background: var(--card-bg);
+            backdrop-filter: blur(15px);
+            border-radius: 16px;
+            padding: 30px;
+            border: 1px solid var(--glass-border);
+            box-shadow: 0 0 30px rgba(0, 240, 255, 0.15), inset 0 0 20px rgba(0, 240, 255, 0.03);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .cyber-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(0, 240, 255, 0.12), transparent);
+            transition: left 1s ease;
+        }
+
+        .cyber-card:hover::before {
+            left: 100%;
+        }
+
+        .video-card {
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+            overflow: hidden;
+            gap: 15px;
+        }
+
+        .video-wrapper {
+            position: relative;
+            width: 100%;
+            padding-top: 56.25%;
+            border-radius: 8px;
+            overflow: hidden;
+            background: #000;
+            border: 2px solid var(--neon-cyan);
+            box-shadow: 0 0 30px rgba(0, 240, 255, 0.3), inset 0 0 20px rgba(0, 240, 255, 0.1);
+            transition: var(--fast-transition);
+        }
+
+        .video-wrapper.success {
+            border-color: var(--neon-green);
+            box-shadow: 0 0 30px rgba(0, 255, 136, 0.5), inset 0 0 20px rgba(0, 255, 136, 0.15);
+        }
+
+        .video-wrapper.fail {
+            border-color: var(--neon-red);
+            box-shadow: 0 0 30px rgba(255, 42, 42, 0.5), inset 0 0 20px rgba(255, 42, 42, 0.15);
+        }
+
+        .hud-corner {
+            position: absolute;
+            width: 30px;
+            height: 30px;
+            border: 2px solid var(--neon-cyan);
+            z-index: 20;
+            pointer-events: none;
+        }
+        .hud-corner.tl { top: 10px; left: 10px; border-right: none; border-bottom: none; }
+        .hud-corner.tr { top: 10px; right: 10px; border-left: none; border-bottom: none; }
+        .hud-corner.bl { bottom: 10px; left: 10px; border-right: none; border-top: none; }
+        .hud-corner.br { bottom: 10px; right: 10px; border-top: none; }
+
+        .camera-off-tip {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+            color: var(--neon-red);
+            z-index: 2;
+            transition: opacity 0.3s ease;
+        }
+
+        .camera-off-tip i {
+            font-size: 4rem;
+            text-shadow: 0 0 20px rgba(255, 42, 42, 0.6);
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        .camera-off-tip span {
+            font-size: 1.5rem;
+            font-weight: 600;
+            letter-spacing: 2px;
+            text-shadow: 0 0 15px rgba(255, 42, 42, 0.5);
+            font-family: 'Orbitron', sans-serif;
+        }
+
+        #video {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            z-index: 10;
+        }
+        #faceCanvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            z-index: 11;
+            pointer-events: none;
+        }
+
+        .video-wrapper.camera-active .camera-off-tip {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .video-wrapper::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(0deg, transparent 0%, rgba(0, 240, 255, 0.08) 50%, transparent 100%);
+            animation: scanLine 1.5s linear infinite;
+            pointer-events: none;
+            z-index: 15;
+        }
+
+        .video-status-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 15px;
+            background: var(--card-deep-bg);
+            border-radius: 6px;
+            border: 1px solid var(--glass-border);
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .status-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: rgba(0, 240, 255, 0.9);
+            font-size: 0.85rem;
+            font-family: 'Rajdhani', sans-serif;
+            letter-spacing: 0.5px;
+        }
+
+        .status-item i {
+            color: var(--neon-cyan);
+        }
+
+        .status-item.face-detected i {
+            color: var(--neon-green);
+        }
+
+        .status-item.face-lost i {
+            color: var(--neon-red);
+        }
+
+        .tab-nav {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+            padding: 4px;
+            background: rgba(0, 240, 255, 0.05);
+            border: 1px solid var(--glass-border);
+        }
+
+        .tab-btn {
+            padding: 12px 0;
+            background: transparent;
+            border: none;
+            border-radius: 6px;
+            color: rgba(0, 240, 255, 0.6);
+            font-weight: 600;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: var(--transition);
+            letter-spacing: 1px;
+            font-family: 'Orbitron', sans-serif;
+        }
+
+        .tab-btn.active {
+            background: linear-gradient(135deg, #005080 0%, #00a0c0 100%);
+            color: #fff;
+            box-shadow: 0 0 15px rgba(0, 240, 255, 0.4);
+        }
+
+        .tab-panel {
+            display: none;
+            flex-direction: column;
+            gap: 25px;
+        }
+
+        .tab-panel.active {
+            display: flex;
+        }
+
+        .checkin-status {
+            padding: 15px;
+            border-radius: 8px;
+            background: rgba(0, 240, 255, 0.05);
+            border: 1px solid var(--glass-border);
+            text-align: center;
+            transition: var(--fast-transition);
+        }
+
+        .checkin-status.detecting {
+            border-color: var(--neon-yellow);
+            background: rgba(255, 221, 0, 0.05);
+        }
+        .checkin-status.detecting p {
+            color: var(--neon-yellow);
+        }
+
+        .checkin-status.success {
+            border-color: var(--neon-green);
+            background: rgba(0, 255, 136, 0.05);
+        }
+        .checkin-status.success p {
+            color: var(--neon-green);
+        }
+
+        .checkin-status.fail {
+            border-color: var(--neon-red);
+            background: rgba(255, 42, 42, 0.05);
+        }
+        .checkin-status.fail p {
+            color: var(--neon-red);
+        }
+
+        .checkin-status.align {
+            border-color: var(--neon-gray);
+            background: rgba(204, 204, 204, 0.05);
+        }
+        .checkin-status.align p {
+            color: var(--neon-gray);
+        }
+
+        .checkin-status p {
+            color: var(--neon-cyan);
+            font-size: 1.2rem;
+            line-height: 1.5;
+            margin-bottom: 8px;
+            font-weight: 600;
+        }
+
+        .checkin-time {
+            font-size: 0.9rem;
+            color: rgba(255,255,255,0.7);
+            font-family: 'Rajdhani', monospace;
+            display: block;
+            margin-top: 8px;
+        }
+
+        .form-card {
+            display: flex;
+            flex-direction: column;
+            gap: 0;
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .input-group label {
+            font-weight: 600;
+            color: var(--neon-cyan);
+            font-size: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            letter-spacing: 1px;
+            text-shadow: 0 0 10px rgba(0, 240, 255, 0.3);
+        }
+
+        .input-group input {
+            width: 100%;
+            padding: 16px 20px;
+            border: 2px solid var(--glass-border);
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: var(--fast-transition);
+            outline: none;
+            background: rgba(10, 20, 40, 0.6);
+            color: #fff;
+            letter-spacing: 1px;
+            box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.3);
+        }
+
+        .input-group input:focus {
+            border-color: var(--neon-cyan);
+            box-shadow: 0 0 20px rgba(0, 240, 255, 0.3), inset 0 0 10px rgba(0, 240, 255, 0.05);
+            background: rgba(10, 20, 40, 0.9);
+            animation: inputPulse 1.5s ease-in-out infinite alternate;
+        }
+
+        .btn-group {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-top: 5px;
+        }
+
+        .cyber-btn {
+            padding: 16px 20px;
+            border: 2px solid transparent;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            position: relative;
+            overflow: hidden;
+            font-family: 'Orbitron', sans-serif;
+        }
+
+        .cyber-btn::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.2);
+            transform: translate(-50%, -50%);
+            transition: width 0.6s, height 0.6s;
+        }
+
+        .cyber-btn:active::after {
+            width: 300px;
+            height: 300px;
+        }
+
+        .cyber-btn:disabled {
+            opacity: 0.3;
+            cursor: not-allowed;
+            transform: none !important;
+            filter: grayscale(100%);
+            box-shadow: none !important;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #005080 0%, #00a0c0 100%);
+            border-color: var(--neon-cyan);
+            color: #fff;
+            box-shadow: 0 0 20px rgba(0, 240, 255, 0.3);
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            transform: translateY(-3px);
+            box-shadow: 0 0 30px rgba(0, 240, 255, 0.6);
+            background: linear-gradient(135deg, #006090 0%, #00b0d0 100%);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #007040 0%, #00b060 100%);
+            border-color: var(--neon-green);
+            color: #fff;
+            box-shadow: 0 0 20px rgba(0, 255, 136, 0.3);
+        }
+
+        .btn-success:hover:not(:disabled) {
+            transform: translateY(-3px);
+            box-shadow: 0 0 30px rgba(0, 255, 136, 0.6);
+            background: linear-gradient(135deg, #008050 0%, #00c070 100%);
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #801010 0%, #c02020 100%);
+            border-color: var(--neon-red);
+            color: #fff;
+            box-shadow: 0 0 20px rgba(255, 42, 42, 0.3);
+        }
+
+        .btn-danger:hover:not(:disabled) {
+            transform: translateY(-3px);
+            box-shadow: 0 0 30px rgba(255, 42, 42, 0.6);
+            background: linear-gradient(135deg, #901515 0%, #d02525 100%);
+        }
+
+        .btn-warning {
+            background: linear-gradient(135deg, #b08000 0%, #ffcc00 100%);
+            border-color: var(--neon-yellow);
+            color: #000;
+            box-shadow: 0 0 20px rgba(255, 221, 0, 0.3);
+        }
+
+        .btn-warning:hover:not(:disabled) {
+            transform: translateY(-3px);
+            box-shadow: 0 0 30px rgba(255, 221, 0, 0.6);
+            background: linear-gradient(135deg, #c09000 0%, #ffdd22 100%);
+        }
+
+        /* 小尺寸按钮（用于表格操作列） */
+        .btn-small {
+            padding: 6px 8px;
+            font-size: 0.7rem;
+            gap: 5px;
+            flex: 1;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 6px;
+            justify-content: space-between;
+        }
+
+        .btn-full {
+            grid-column: 1 / -1;
+        }
+
+        .tip-text {
+            text-align: center;
+            color: rgba(0, 240, 255, 0.7);
+            font-size: 0.9rem;
+            line-height: 1.5;
+            letter-spacing: 0.5px;
+            padding: 10px;
+            background: rgba(0, 240, 255, 0.05);
+            border-radius: 6px;
+            border: 1px solid rgba(0, 240, 255, 0.2);
+        }
+
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(5, 10, 26, 0.92);
+            backdrop-filter: blur(12px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 999;
+            flex-direction: column;
+            gap: 30px;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .loading-overlay.active {
+            display: flex;
+        }
+
+        .loading-scanner {
+            width: 300px;
+            height: 4px;
+            background: rgba(0, 240, 255, 0.1);
+            border-radius: 2px;
+            overflow: hidden;
+            position: relative;
+            box-shadow: 0 0 20px rgba(0, 240, 255, 0.3);
+        }
+
+        .loading-scanner::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, var(--neon-cyan), transparent);
+            animation: scannerSlide 1s ease-in-out infinite;
+        }
+
+        .loading-text {
+            color: var(--neon-cyan);
+            font-size: 1.2rem;
+            font-weight: 600;
+            letter-spacing: 2px;
+            text-shadow: 0 0 20px rgba(0, 240, 255, 0.5);
+            font-family: 'Orbitron', sans-serif;
+        }
+
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(5, 10, 26, 0.88);
+            backdrop-filter: blur(10px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal-card {
+            background: var(--card-deep-bg);
+            border: 2px solid var(--neon-cyan);
+            border-radius: 16px;
+            padding: 50px 40px;
+            max-width: 500px;
+            width: 90%;
+            text-align: center;
+            box-shadow: 0 0 50px rgba(0, 240, 255, 0.3), inset 0 0 30px rgba(0, 240, 255, 0.05);
+            animation: scaleUp 0.4s ease;
+            position: relative;
+            backdrop-filter: blur(20px);
+        }
+
+        .modal-card::before {
+            content: '';
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            width: 20px;
+            height: 20px;
+            border: 2px solid var(--neon-cyan);
+            border-right: none;
+            border-bottom: none;
+        }
+
+        .modal-card::after {
+            content: '';
+            position: absolute;
+            bottom: 15px;
+            right: 15px;
+            width: 20px;
+            height: 20px;
+            border: 2px solid var(--neon-cyan);
+            border-left: none;
+            border-top: none;
+        }
+
+        .modal-card.modal-fail {
+            border-color: var(--neon-red);
+            box-shadow: 0 0 50px rgba(255, 42, 42, 0.3), inset 0 0 30px rgba(255, 42, 42, 0.05);
+        }
+
+        .modal-card.modal-fail::before,
+        .modal-card.modal-fail::after {
+            border-color: var(--neon-red);
+        }
+
+        .modal-card.modal-success {
+            border-color: var(--neon-green);
+            box-shadow: 0 0 50px rgba(0, 255, 136, 0.3), inset 0 0 30px rgba(0, 255, 136, 0.05);
+        }
+
+        .modal-card.modal-success::before,
+        .modal-card.modal-success::after {
+            border-color: var(--neon-green);
+        }
+
+        .modal-icon {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 25px;
+            font-size: 3rem;
+            border: 3px solid;
+            animation: iconPulse 2s ease-in-out infinite alternate;
+        }
+
+        .icon-success {
+            border-color: var(--neon-green);
+            color: var(--neon-green);
+            background: rgba(0, 255, 136, 0.1);
+            box-shadow: 0 0 30px rgba(0, 255, 136, 0.5);
+        }
+
+        .icon-fail {
+            border-color: var(--neon-red);
+            color: var(--neon-red);
+            background: rgba(255, 42, 42, 0.1);
+            box-shadow: 0 0 30px rgba(255, 42, 42, 0.5);
+        }
+
+        .modal-title {
+            font-size: 2rem;
+            font-weight: 900;
+            margin-bottom: 15px;
+            letter-spacing: 2px;
+            font-family: 'Orbitron', sans-serif;
+        }
+
+        .title-success {
+            color: var(--neon-green);
+            text-shadow: 0 0 20px rgba(0, 255, 136, 0.5);
+        }
+
+        .title-fail {
+            color: var(--neon-red);
+            text-shadow: 0 0 20px rgba(255, 42, 42, 0.5);
+        }
+
+        .modal-desc {
+            color: rgba(255, 255, 255, 0.85);
+            font-size: 1.1rem;
+            line-height: 1.6;
+            margin-bottom: 30px;
+        }
+
+        .modal-detail {
+            background: rgba(0, 0, 0, 0.6);
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+            font-family: 'Rajdhani', monospace;
+            font-size: 1rem;
+            color: var(--neon-cyan);
+            border: 1px solid rgba(0, 240, 255, 0.3);
+            text-align: left;
+            letter-spacing: 0.5px;
+            white-space: pre-line;
+            line-height: 1.8;
+            box-shadow: inset 0 0 15px rgba(0, 0, 0, 0.5);
+        }
+
+        .modal-btn {
+            width: 100%;
+            padding: 16px;
+            border-radius: 8px;
+            font-size: 1.1rem;
+            font-weight: 700;
+            border: 2px solid;
+            cursor: pointer;
+            transition: var(--transition);
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            font-family: 'Orbitron', sans-serif;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn-modal-success {
+            background: linear-gradient(135deg, #007040 0%, #00b060 100%);
+            border-color: var(--neon-green);
+            color: #fff;
+            box-shadow: 0 0 20px rgba(0, 255, 136, 0.3);
+        }
+
+        .btn-modal-fail {
+            background: linear-gradient(135deg, #801010 0%, #c02020 100%);
+            border-color: var(--neon-red);
+            color: #fff;
+            box-shadow: 0 0 20px rgba(255, 42, 42, 0.3);
+        }
+
+        .modal-btn:hover {
+            transform: translateY(-3px);
+        }
+
+        .shutter-flash {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #fff;
+            z-index: 9999;
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .shutter-flash.active {
+            animation: shutterFlash 0.2s ease-out;
+        }
+
+        .records-card {
+            width: 100%;
+            max-width: 1400px;
+            margin-bottom: 20px;
+        }
+        .records-card h2 {
+            color: var(--neon-cyan);
+            font-size: 1.5rem;
+            margin-bottom: 20px;
+            letter-spacing: 2px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .records-table-wrapper {
+            overflow-x: auto;
+            border-radius: 8px;
+            border: 1px solid var(--glass-border);
+        }
+        .records-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-family: 'Rajdhani', sans-serif;
+        }
+        .records-table thead {
+            background: rgba(0, 240, 255, 0.1);
+        }
+        .records-table th {
+            padding: 12px 15px;
+            text-align: left;
+            color: var(--neon-cyan);
+            font-weight: 700;
+            letter-spacing: 1px;
+            border-bottom: 1px solid var(--glass-border);
+        }
+        .records-table td {
+            padding: 12px 15px;
+            color: rgba(255,255,255,0.85);
+            border-bottom: 1px solid rgba(0, 240, 255, 0.1);
+        }
+        .records-table tbody tr {
+            transition: var(--fast-transition);
+        }
+        .records-table tbody tr:hover {
+            background: rgba(0, 240, 255, 0.05);
+        }
+
+        /* 管理表格字体稍小，避免换行 */
+        .admin-table td {
+            font-size: 0.8rem;
+            padding: 8px 23px;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            font-weight: 600;
+        }
+        .badge-success {
+            background: rgba(0, 255, 136, 0.1);
+            color: var(--neon-green);
+            border: 1px solid var(--neon-green);
+        }
+        .badge-fail {
+            background: rgba(255, 42, 42, 0.1);
+            color: var(--neon-red);
+            border: 1px solid var(--neon-red);
+        }
+        .empty-records {
+            text-align: center;
+            padding: 30px;
+            color: rgba(255,255,255,0.5);
+            font-size: 0.9rem;
+        }
+
+        .user-row.selected {
+            background: rgba(0, 240, 255, 0.15) !important;
+            border-left: 3px solid var(--neon-cyan);
+        }
+
+        /* 静音按钮样式 */
+        .mute-btn {
+            background: transparent;
+            border: 1px solid var(--glass-border);
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: var(--fast-transition);
+            color: var(--neon-cyan);
+            font-size: 0.5rem;   /* 按钮大小 */
+        }
+        .mute-btn:hover {
+            background: rgba(0, 240, 255, 0.1);
+            border-color: var(--neon-cyan);
+        }
+        .mute-btn.muted {
+            color: var(--neon-red);
+        }
+
+        @keyframes scannerSlide {
+            0% { left: -100%; }
+            100% { left: 100%; }
+        }
+
+        @keyframes scanLine {
+            0% { transform: translateY(-100%); }
+            100% { transform: translateY(100%); }
+        }
+
+        @keyframes bgPulse {
+            0% { opacity: 0.6; }
+            100% { opacity: 1; }
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes scaleUp {
+            from { transform: scale(0.8); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+
+        @keyframes fadeDown {
+            from { transform: translateY(-30px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        @keyframes fadeUp {
+            from { transform: translateY(30px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        @keyframes titleGlow {
+            0% { background-position: 0% 50%; }
+            100% { background-position: 100% 50%; }
+        }
+
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.3; }
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+
+        @keyframes inputPulse {
+            0% { box-shadow: 0 0 15px rgba(0, 240, 255, 0.2), inset 0 0 10px rgba(0, 240, 255, 0.05); }
+            100% { box-shadow: 0 0 25px rgba(0, 240, 255, 0.4), inset 0 0 10px rgba(0, 240, 255, 0.08); }
+        }
+
+        @keyframes iconPulse {
+            0% { box-shadow: 0 0 15px currentColor; }
+            100% { box-shadow: 0 0 30px currentColor; }
+        }
+
+        @keyframes shutterFlash {
+            0% { opacity: 0; }
+            50% { opacity: 1; }
+            100% { opacity: 0; }
+        }
+    </style>
+</head>
+<body>
+    <div class="shutter-flash" id="shutterFlash"></div>
+    <div class="header">
+        <div class="corner-decoration corner-tl"></div>
+        <div class="corner-decoration corner-tr"></div>
+        <h1><i class="fas fa-star"></i> 青星智能人脸识别验证系统</h1>
+        <p>
+            InsightFace · 深度学习算法 · 高精度实时验证
+            <span class="status-indicator">
+                <span class="status-dot" id="systemStatusDot"></span>
+                <span id="systemStatusText">系统就绪</span>
+            </span>
+            <!-- 静音切换按钮 -->
+            <button class="mute-btn" id="muteToggleBtn" title="语音播报开关">
+                <i class="fas fa-volume-up"></i>
+            </button>
+        </p>
+    </div>
+
+    <div class="main-container">
+        <div class="cyber-card video-card">
+            <div class="video-wrapper" id="videoWrapper">
+                <div class="hud-corner tl"></div>
+                <div class="hud-corner tr"></div>
+                <div class="hud-corner bl"></div>
+                <div class="hud-corner br"></div>
+                <div class="camera-off-tip">
+                    <i class="fas fa-video-slash"></i>
+                    <span>摄像头离线</span>
+                </div>
+                <video id="video" autoplay muted playsinline></video>
+                <canvas id="faceCanvas"></canvas>
+            </div>
+            <div class="video-status-bar">
+                <div class="status-item" id="cameraStatus">
+                    <i class="fas fa-video"></i>
+                    <span>摄像头：未就绪</span>
+                </div>
+                <div class="status-item" id="detectionStatus">
+                    <i class="fas fa-user"></i>
+                    <span>人脸检测：未检测</span>
+                </div>
+                <div class="status-item" id="timeStatus">
+                    <i class="fas fa-clock"></i>
+                    <span id="currentTime">--:--:--</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="cyber-card form-card">
+            <div class="tab-nav">
+                <button class="tab-btn active" data-tab="auto-checkin">自动打卡</button>
+                <button class="tab-btn" data-tab="register">注册验证</button>
+                <button class="tab-btn" data-tab="admin">数据管理</button>
+            </div>
+
+            <!-- 自动打卡面板 -->
+            <div class="tab-panel active" id="auto-checkin-panel">
+                <div class="btn-group">
+                    <button class="cyber-btn btn-primary" id="openCameraBtn"><i class="fas fa-video"></i> 启动摄像头</button>
+                    <button class="cyber-btn btn-danger" id="closeCameraBtn" disabled><i class="fas fa-power-off"></i> 关闭摄像头</button>
+                </div>
+                <div class="checkin-status" id="checkinStatus">
+                    <p><i class="fas fa-info-circle"></i> 启动摄像头后将自动执行人脸打卡</p>
+                    <span class="checkin-time">等待启动...</span>
+                </div>
+                <p class="tip-text"><i class="fas fa-info-circle"></i> 自动模式：检测到人脸后自动完成打卡</p>
+            </div>
+
+            <!-- 注册验证面板 -->
+            <div class="tab-panel" id="register-panel">
+                <div class="input-group">
+                    <label for="userId"><i class="fas fa-user-tag"></i> 用户ID</label>
+                    <input type="text" id="userId" placeholder="请输入用户唯一ID" autocomplete="off">
+                </div>
+                <div class="input-group">
+                    <label for="userName"><i class="fas fa-user"></i> 用户名</label>
+                    <input type="text" id="userName" placeholder="请输入用户名（仅注册使用）" autocomplete="off">
+                </div>
+                <div class="btn-group">
+                    <button class="cyber-btn btn-primary" id="registerOpenCameraBtn"><i class="fas fa-video"></i> 启动摄像头</button>
+                    <button class="cyber-btn btn-danger" id="registerCloseCameraBtn" disabled><i class="fas fa-power-off"></i> 关闭摄像头</button>
+                </div>
+                <div class="btn-group">
+                    <button class="cyber-btn btn-success" id="registerBtn" disabled><i class="fas fa-user-plus"></i> 注册人脸</button>
+                    <button class="cyber-btn btn-primary" id="verifyBtn" disabled><i class="fas fa-fingerprint"></i> 人脸验证</button>
+                </div>
+                <p class="tip-text"><i class="fas fa-info-circle"></i> 手动模式：请先完成人脸注册，即可执行人脸验证</p>
+            </div>
+
+            <!-- 数据管理面板 -->
+            <div class="tab-panel" id="admin-panel">
+                <!-- 密码验证区域 -->
+                <div id="adminAuthSection">
+                    <div class="input-group">
+                        <label for="adminPassword"><i class="fas fa-lock"></i> 管理员密码</label>
+                        <input type="password" id="adminPassword" placeholder="请输入管理员密码" autocomplete="off">
+                    </div>
+                    <div class="btn-group">
+                        <button class="cyber-btn btn-primary" id="adminLoginBtn"><i class="fas fa-sign-in-alt"></i> 验证</button>
+                    </div>
+                    <p class="tip-text"><i class="fas fa-shield-alt"></i> 请输入密码以访问数据管理功能</p>
+                </div>
+
+                <!-- 管理功能区域 -->
+                <div id="adminFunctionSection" style="display: none;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                        <h4 style="color: var(--neon-cyan);"><i class="fas fa-users"></i> 注册用户列表</h4>
+                        <button class="cyber-btn btn-warning" id="adminLogoutBtn" style="padding: 8px 16px; width: auto;"><i class="fas fa-sign-out-alt"></i> 退出管理</button>
+                    </div>
+                    <!-- 用户列表表格 -->
+                    <div class="records-table-wrapper" style="max-height: 350px; margin-bottom: 15px;">
+                        <table class="records-table admin-table" id="adminUsersTable">
+                            <thead>
+                                <tr>
+                                    <th>用户ID</th>
+                                    <th>用户名</th>
+                                    <th>注册时间</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody id="adminUsersTbody">
+                                <tr><td colspan="4" class="empty-records">加载中...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <!-- 打卡记录展示区域 -->
+                    <h4 style="color: var(--neon-cyan); margin-bottom: 10px;"><i class="fas fa-history"></i> <span id="selectedUserLabel">选中用户</span> 的打卡记录</h4>
+                    <div class="records-table-wrapper" style="max-height: 400px;">
+                        <table class="records-table" id="adminRecordsTable">
+                            <thead>
+                                <tr>
+                                    <th>打卡时间</th>
+                                    <th>相似度</th>
+                                    <th>打卡类型</th>
+                                </tr>
+                            </thead>
+                            <tbody id="adminRecordsTbody">
+                                <tr><td colspan="3" class="empty-records">请点击“查询打卡记录”</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <p class="tip-text" style="margin-top: 10px;"><i class="fas fa-exclamation-triangle"></i> 删除用户将同时清除其所有打卡记录，操作不可逆</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="cyber-card records-card" id="recordsCard">
+        <h2><i class="fas fa-list-alt"></i> 最近打卡记录</h2>
+        <div class="records-table-wrapper">
+            <table class="records-table" id="recordsTable">
+                <thead>
+                    <tr>
+                        <th>序号</th>
+                        <th>用户ID</th>
+                        <th>用户名</th>
+                        <th>打卡时间</th>
+                        <th>相似度</th>
+                        <th>状态</th>
+                    </tr>
+                </thead>
+                <tbody id="recordsTbody">
+                    <tr>
+                        <td colspan="6" class="empty-records">暂无打卡记录</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="loading-scanner"></div>
+        <div class="loading-text" id="loadingText">系统处理中...</div>
+    </div>
+
+    <!-- 通用结果弹窗 -->
+    <div class="modal-overlay" id="resultModal">
+        <div class="modal-card" id="modalCard">
+            <div class="modal-icon" id="modalIcon"></div>
+            <h2 class="modal-title" id="modalTitle"></h2>
+            <p class="modal-desc" id="modalDesc"></p>
+            <div class="modal-detail" id="modalDetail"></div>
+            <button class="modal-btn" id="modalConfirmBtn">确认</button>
+        </div>
+    </div>
+
+    <!-- 二次确认弹窗（用于删除操作） -->
+    <div class="modal-overlay" id="confirmModal">
+        <div class="modal-card modal-fail">
+            <div class="modal-icon icon-fail">
+                <i class="fas fa-exclamation-triangle"></i>
+            </div>
+            <h2 class="modal-title title-fail">确认删除</h2>
+            <p class="modal-desc" id="confirmModalDesc">确定要删除该用户吗？</p>
+            <div class="modal-detail" id="confirmModalDetail"></div>
+            <div style="display: flex; gap: 15px;">
+                <button class="modal-btn btn-modal-fail" id="confirmModalConfirmBtn" style="flex:1;">确认</button>
+                <button class="modal-btn btn-modal-success" id="confirmModalCancelBtn" style="flex:1;">取消</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        (function() {
+            // ---------- Canvas roundRect 补丁 ----------
+            if (!CanvasRenderingContext2D.prototype.roundRect) {
+                CanvasRenderingContext2D.prototype.roundRect = function(x, y, w, h, r) {
+                    if (w < 2 * r) r = w / 2;
+                    if (h < 2 * r) r = h / 2;
+                    this.moveTo(x + r, y);
+                    this.lineTo(x + w - r, y);
+                    this.quadraticCurveTo(x + w, y, x + w, y + r);
+                    this.lineTo(x + w, y + h - r);
+                    this.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+                    this.lineTo(x + r, y + h);
+                    this.quadraticCurveTo(x, y + h, x, y + h - r);
+                    this.lineTo(x, y + r);
+                    this.quadraticCurveTo(x, y, x + r, y);
+                    return this;
+                };
+            }
+
+            const BASE_URL = "http://localhost:8000";
+            const CHECKIN_STATUS = { IDLE: 'idle', DETECTING: 'detecting', SUCCESS: 'success', FAIL: 'fail', ALIGN: 'align' };
+            const CHECKIN_COOLDOWN = 5000;
+            const CONTINUOUS_FRAME_THRESHOLD = 3;
+            const MODEL_URL = './public/models';
+            let adminAuthorized = false;
+            let adminPassword = '';
+            let currentSelectedUserId = null;
+
+            // 音频
+            const successAudio = new Audio("https://assets.mixkit.co/sfx/preview/mixkit-correct-answer-tone-2870.mp3");
+            const failAudio = new Audio("https://assets.mixkit.co/sfx/preview/mixkit-wrong-answer-fail-notification-946.mp3");
+            successAudio.volume = 0.3; failAudio.volume = 0.3;
+            successAudio.addEventListener('error', ()=>{});
+            failAudio.addEventListener('error', ()=>{});
+
+            // DOM 元素
+            const videoWrapper = document.getElementById("videoWrapper");
+            const video = document.getElementById("video");
+            const faceCanvas = document.getElementById("faceCanvas");
+            const ctx = faceCanvas.getContext("2d");
+            const userIdInput = document.getElementById("userId");
+            const userNameInput = document.getElementById("userName");
+            const registerBtn = document.getElementById("registerBtn");
+            const verifyBtn = document.getElementById("verifyBtn");
+            const registerOpenCameraBtn = document.getElementById("registerOpenCameraBtn");
+            const registerCloseCameraBtn = document.getElementById("registerCloseCameraBtn");
+            const checkinStatus = document.getElementById("checkinStatus");
+            const openCameraBtn = document.getElementById("openCameraBtn");
+            const closeCameraBtn = document.getElementById("closeCameraBtn");
+            const tabBtns = document.querySelectorAll(".tab-btn");
+            const tabPanels = document.querySelectorAll(".tab-panel");
+            const recordsTbody = document.getElementById("recordsTbody");
+            const loadingOverlay = document.getElementById("loadingOverlay");
+            const loadingText = document.getElementById("loadingText");
+            const resultModal = document.getElementById("resultModal");
+            const modalCard = document.getElementById("modalCard");
+            const modalIcon = document.getElementById("modalIcon");
+            const modalTitle = document.getElementById("modalTitle");
+            const modalDesc = document.getElementById("modalDesc");
+            const modalDetail = document.getElementById("modalDetail");
+            const modalConfirmBtn = document.getElementById("modalConfirmBtn");
+            const shutterFlash = document.getElementById("shutterFlash");
+            const systemStatusDot = document.getElementById("systemStatusDot");
+            const systemStatusText = document.getElementById("systemStatusText");
+            const cameraStatus = document.getElementById("cameraStatus");
+            const detectionStatus = document.getElementById("detectionStatus");
+            const currentTime = document.getElementById("currentTime");
+
+            // 管理员元素
+            const adminAuthSection = document.getElementById("adminAuthSection");
+            const adminFunctionSection = document.getElementById("adminFunctionSection");
+            const adminPasswordInput = document.getElementById("adminPassword");
+            const adminLoginBtn = document.getElementById("adminLoginBtn");
+            const adminLogoutBtn = document.getElementById("adminLogoutBtn");
+            const adminUsersTbody = document.getElementById("adminUsersTbody");
+            const adminRecordsTbody = document.getElementById("adminRecordsTbody");
+            const selectedUserLabel = document.getElementById("selectedUserLabel");
+
+            // 确认弹窗元素
+            const confirmModal = document.getElementById("confirmModal");
+            const confirmModalDesc = document.getElementById("confirmModalDesc");
+            const confirmModalDetail = document.getElementById("confirmModalDetail");
+            const confirmModalConfirmBtn = document.getElementById("confirmModalConfirmBtn");
+            const confirmModalCancelBtn = document.getElementById("confirmModalCancelBtn");
+
+            // 静音按钮
+            const muteToggleBtn = document.getElementById("muteToggleBtn");
+            let isMuted = localStorage.getItem('voiceMuted') === 'true'; // 从localStorage读取静音状态
+
+            // 全局状态
+            let stream = null;
+            let isCameraOpen = false;
+            let isRequestingCamera = false;
+            let isModelLoaded = false;
+            let isCheckingIn = false;
+            let lastCheckinTime = parseInt(localStorage.getItem('lastCheckinTime') || '0');
+            let continuousFaceFrame = 0;
+            let currentCheckinStatus = CHECKIN_STATUS.IDLE;
+            let lastDetectionHadFace = false;
+            let detectionLoopId = null;
+
+            // ========== 语音播报（甜美自然女声，不喊用户名） ==========
+            function updateMuteButton() {
+                const icon = muteToggleBtn.querySelector('i');
+                if (isMuted) {
+                    icon.className = 'fas fa-volume-mute';
+                    muteToggleBtn.classList.add('muted');
+                } else {
+                    icon.className = 'fas fa-volume-up';
+                    muteToggleBtn.classList.remove('muted');
+                }
+                localStorage.setItem('voiceMuted', isMuted);
+            }
+
+            // 语音合成（优先选择 Microsoft Xiaoxiao 或 Google 普通话女声，使用默认语速音调）
+            function speakText(text) {
+                if (isMuted) return; // 静音状态不播报
+                if (!('speechSynthesis' in window)) {
+                    console.warn('当前浏览器不支持 Web Speech API');
+                    return;
+                }
+
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.lang = 'zh-CN';
+                // 不再调整 rate/pitch，使用系统默认（甜美自然）
+                utterance.volume = 1;
+
+                const voices = window.speechSynthesis.getVoices();
+                const selectVoice = () => {
+                    let selectedVoice = voices.find(v =>
+                        v.lang.includes('zh') &&
+                        (v.name.includes('Xiaoxiao') || v.name.includes('Google'))
+                    );
+                    if (!selectedVoice) {
+                        selectedVoice = voices.find(v => v.lang.includes('zh') && !v.name.includes('Male'));
+                    }
+                    if (!selectedVoice) {
+                        selectedVoice = voices.find(v => v.lang.includes('zh'));
+                    }
+                    if (selectedVoice) {
+                        utterance.voice = selectedVoice;
+                    }
+                    window.speechSynthesis.cancel(); // 避免重叠
+                    window.speechSynthesis.speak(utterance);
+                };
+
+                if (voices.length === 0) {
+                    window.speechSynthesis.onvoiceschanged = () => {
+                        const newVoices = window.speechSynthesis.getVoices();
+                        if (newVoices.length > 0) {
+                            selectVoice();
+                        }
+                    };
+                } else {
+                    selectVoice();
+                }
+            }
+
+            // 初始化静音按钮
+            function initMuteButton() {
+                updateMuteButton();
+                muteToggleBtn.addEventListener('click', () => {
+                    isMuted = !isMuted;
+                    updateMuteButton();
+                    // 切换时若有正在播放的语音，立即停止
+                    if (isMuted && window.speechSynthesis) {
+                        window.speechSynthesis.cancel();
+                    }
+                });
+            }
+
+            // ========== 辅助函数 ==========
+            function setLoadingStep(text) { loadingText.textContent = text; }
+            function showLoading(text = "系统处理中...") { loadingText.textContent = text; loadingOverlay.classList.add("active"); }
+            function hideLoading() { loadingOverlay.classList.remove("active"); }
+
+            function updateSystemStatus(isActive, text) {
+                systemStatusDot.className = isActive ? "status-dot active" : "status-dot";
+                systemStatusText.textContent = text;
+            }
+
+            function updateButtonStatus() {
+                closeCameraBtn.disabled = !isCameraOpen;
+                registerCloseCameraBtn.disabled = !isCameraOpen;
+                openCameraBtn.disabled = isCameraOpen || isRequestingCamera || !isModelLoaded;
+                registerOpenCameraBtn.disabled = isCameraOpen || isRequestingCamera || !isModelLoaded;
+                const isCameraReady = isCameraOpen && stream && isModelLoaded;
+                registerBtn.disabled = !isCameraReady || !userIdInput.value.trim();
+                verifyBtn.disabled = !isCameraReady || !userIdInput.value.trim();
+                cameraStatus.innerHTML = isCameraOpen
+                    ? '<i class="fas fa-video"></i><span>摄像头：已就绪</span>'
+                    : '<i class="fas fa-video"></i><span>摄像头：未就绪</span>';
+                cameraStatus.style.color = isCameraOpen ? "var(--neon-green)" : "rgba(0, 240, 255, 0.9)";
+            }
+
+            function updateCurrentTime() { currentTime.textContent = new Date().toLocaleTimeString('zh-CN', { hour12: false }); }
+
+            function resizeCanvas() {
+                const rect = videoWrapper.getBoundingClientRect();
+                faceCanvas.width = rect.width;
+                faceCanvas.height = rect.height;
+            }
+
+            function triggerShutter() {
+                shutterFlash.classList.add("active");
+                setTimeout(() => shutterFlash.classList.remove("active"), 200);
+            }
+
+            async function captureImage() {
+                if (!stream) { showResultModal(false, "操作失败", "请先启动摄像头设备"); return null; }
+                triggerShutter();
+                const canvas = document.createElement("canvas");
+                canvas.width = video.videoWidth || 1280;
+                canvas.height = video.videoHeight || 720;
+                const captureCtx = canvas.getContext("2d");
+                captureCtx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                return new Promise(resolve => {
+                    canvas.toBlob(blob => resolve(new File([blob], "face_capture.jpg", { type: "image/jpeg" })), "image/jpeg", 0.95);
+                });
+            }
+
+            function getTimeGreeting() {
+                const hour = new Date().getHours();
+                if (hour < 5) return '凌晨好';
+                if (hour < 9) return '早上好';
+                if (hour < 12) return '上午好';
+                if (hour < 14) return '中午好';
+                if (hour < 18) return '下午好';
+                if (hour < 22) return '晚上好';
+                return '深夜好';
+            }
+
+            function updateCheckinStatus(status, data = {}) {
+                currentCheckinStatus = status;
+                checkinStatus.className = `checkin-status ${status}`;
+                const nowStr = new Date().toLocaleString();
+                switch (status) {
+                    case CHECKIN_STATUS.DETECTING:
+                        checkinStatus.innerHTML = `<p><i class="fas fa-spinner fa-spin"></i> 检测中：正在识别，等待人脸</p><span class="checkin-time">当前时间：${nowStr}</span>`;
+                        break;
+                    case CHECKIN_STATUS.SUCCESS:
+                        const userName = data.user_name || data.userName || '用户';
+                        const similarity = data.similarity;
+                        const simPercent = similarity ? (similarity * 100).toFixed(2) : '0.00';
+                        const greeting = getTimeGreeting();
+                        checkinStatus.innerHTML = `
+                            <p style="font-size:1.4rem; margin-bottom:12px;">
+                                <i class="fas fa-check-circle"></i> 识别成功（打卡完成）！
+                            </p>
+                            <p style="font-size:1.2rem; color: var(--neon-green);">
+                                ${greeting}，${userName}，<br> 欢迎回来！
+                            </p>
+                            <span class="checkin-time">打卡时间：${nowStr} | 相似度：${simPercent}%</span>
+                        `;
+                        videoWrapper.classList.add('success');
+                        successAudio.play().catch(()=>{});
+                        setTimeout(() => videoWrapper.classList.remove('success'), 3000);
+                        // 语音播报
+                        speakText(`验证成功，${greeting}`);
+                        break;
+                    case CHECKIN_STATUS.FAIL:
+                        checkinStatus.innerHTML = `<p><i class="fas fa-times-circle"></i> 识别失败：未匹配到有效用户</p><span class="checkin-time">检测时间：${nowStr}</span>`;
+                        videoWrapper.classList.add('fail');
+                        failAudio.play().catch(()=>{});
+                        setTimeout(() => videoWrapper.classList.remove('fail'), 2000);
+                        speakText('验证失败，请正对屏幕');
+                        break;
+                    case CHECKIN_STATUS.ALIGN:
+                        checkinStatus.innerHTML = `<p><i class="fas fa-exclamation-circle"></i> 请正对摄像头，保持人脸在画面中</p><span class="checkin-time">当前时间：${nowStr}</span>`;
+                        break;
+                    default:
+                        checkinStatus.innerHTML = `<p><i class="fas fa-info-circle"></i> 启动摄像头后将自动执行人脸打卡</p><span class="checkin-time">等待启动...</span>`;
+                }
+            }
+
+            function renderRecordsTable(records) {
+                if (!records || records.length === 0) {
+                    recordsTbody.innerHTML = '<tr><td colspan="6" class="empty-records">暂无打卡记录</td></tr>';
+                    return;
+                }
+                let html = '';
+                records.forEach((item, index) => {
+                    html += `
+                        <tr>
+                            <td>${index + 1}</td>
+                            <td>${item.user_id || '-'}</td>
+                            <td>${item.user_name || '未知用户'}</td>
+                            <td>${item.checkin_time || '-'}</td>
+                            <td>${item.similarity ? (item.similarity * 100).toFixed(2) + '%' : '-'}</td>
+                            <td><span class="status-badge badge-success">打卡成功</span></td>
+                        </tr>
+                    `;
+                });
+                recordsTbody.innerHTML = html;
+            }
+
+            async function loadCheckinRecords() {
+                try {
+                    const res = await fetch(`${BASE_URL}/checkin/records?limit=20`);
+                    const data = await res.json();
+                    if (res.ok && data.data) renderRecordsTable(data.data.records);
+                } catch (err) {
+                    console.error('加载记录失败:', err);
+                    recordsTbody.innerHTML = '<tr><td colspan="6" class="empty-records">加载记录失败，请检查后端服务</td></tr>';
+                }
+            }
+
+            function showResultModal(isSuccess, title, desc, detail = "") {
+                modalCard.className = isSuccess ? "modal-card modal-success" : "modal-card modal-fail";
+                modalIcon.className = isSuccess ? "modal-icon icon-success" : "modal-icon icon-fail";
+                modalIcon.innerHTML = isSuccess ? '<i class="fas fa-check"></i>' : '<i class="fas fa-times"></i>';
+                modalTitle.className = isSuccess ? "modal-title title-success" : "modal-title title-fail";
+                modalConfirmBtn.className = isSuccess ? "modal-btn btn-modal-success" : "modal-btn btn-modal-fail";
+                modalTitle.textContent = title;
+                modalDesc.textContent = desc;
+                modalDetail.textContent = detail;
+                resultModal.classList.add("active");
+            }
+            function closeResultModal() { resultModal.classList.remove("active"); }
+
+            // ========== 加载 face-api.js 模型 ==========
+            async function initFaceDetection() {
+                try {
+                    updateSystemStatus(false, "模型加载中...");
+                    showLoading("正在加载人脸识别模型...");
+                    setLoadingStep("加载 SSD MobileNet 检测模型...");
+                    await faceapi.nets.ssdMobilenetv1.loadFromUri(MODEL_URL);
+                    setLoadingStep("加载 68 点特征点模型...");
+                    await faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL);
+                    setLoadingStep("加载面部识别模型...");
+                    await faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL);
+
+                    isModelLoaded = true;
+                    updateSystemStatus(true, "系统就绪");
+                    hideLoading();
+                    updateButtonStatus();
+                    console.log("✅ face-api.js 模型加载完成");
+                } catch (err) {
+                    console.error("模型加载失败:", err);
+                    updateSystemStatus(false, "模型加载失败");
+                    hideLoading();
+                    showResultModal(false, "模型加载失败", "人脸识别模型初始化失败，请检查 /models 目录是否包含所有模型文件", err.message);
+                }
+            }
+
+            // ========== 实时人脸检测循环 ==========
+            async function detectionLoop() {
+                if (!isCameraOpen || !isModelLoaded) {
+                    detectionLoopId = null;
+                    return;
+                }
+                try {
+                    const detection = await faceapi.detectSingleFace(video, new faceapi.SsdMobilenetv1Options({ minConfidence: 0.7 }))
+                        .withFaceLandmarks()
+                        .withFaceDescriptor();
+
+                    ctx.clearRect(0, 0, faceCanvas.width, faceCanvas.height);
+
+                    if (detection) {
+                        detectionStatus.innerHTML = '<i class="fas fa-user-check"></i><span>人脸检测：已检测</span>';
+                        detectionStatus.className = 'status-item face-detected';
+
+                        const box = detection.detection.box;
+                        const x = box.x * faceCanvas.width / video.videoWidth;
+                        const y = box.y * faceCanvas.height / video.videoHeight;
+                        const w = box.width * faceCanvas.width / video.videoWidth;
+                        const h = box.height * faceCanvas.height / video.videoHeight;
+
+                        ctx.lineWidth = 1.5;
+                        ctx.strokeStyle = '#00f0ff';
+                        ctx.fillStyle = 'rgba(0, 240, 255, 0.05)';
+                        ctx.shadowColor = '#00f0ff';
+                        ctx.shadowBlur = 6;
+                        ctx.beginPath();
+                        ctx.roundRect(x, y, w, h, 8);
+                        ctx.stroke();
+                        ctx.fill();
+
+                        handleAutoCheckin(true);
+                        lastDetectionHadFace = true;
+                    } else {
+                        detectionStatus.innerHTML = '<i class="fas fa-user-slash"></i><span>人脸检测：未检测</span>';
+                        detectionStatus.className = 'status-item face-lost';
+                        continuousFaceFrame = 0;
+                        if (lastDetectionHadFace) {
+                            const activeTab = document.querySelector('.tab-panel.active').id;
+                            if (activeTab === 'auto-checkin-panel' && currentCheckinStatus !== CHECKIN_STATUS.SUCCESS) {
+                                updateCheckinStatus(CHECKIN_STATUS.ALIGN);
+                            }
+                        }
+                        lastDetectionHadFace = false;
+                    }
+                } catch (e) {
+                    console.warn('检测循环出错:', e);
+                }
+                detectionLoopId = requestAnimationFrame(detectionLoop);
+            }
+
+            // ========== 自动打卡触发 ==========
+            async function handleAutoCheckin(hasFace) {
+                const activeTab = document.querySelector('.tab-panel.active').id;
+                if (activeTab !== 'auto-checkin-panel') return;
+                if (!hasFace) return;
+
+                const now = Date.now();
+                if (now - lastCheckinTime < CHECKIN_COOLDOWN || isCheckingIn) return;
+
+                continuousFaceFrame++;
+                if (continuousFaceFrame < CONTINUOUS_FRAME_THRESHOLD) return;
+
+                isCheckingIn = true;
+                await autoCheckin();
+                lastCheckinTime = now;
+                localStorage.setItem('lastCheckinTime', now);
+                isCheckingIn = false;
+                continuousFaceFrame = 0;
+            }
+
+            async function autoCheckin() {
+                try {
+                    const file = await captureImage();
+                    if (!file) return;
+                    const formData = new FormData();
+                    formData.append('file', file);
+                    formData.append('checkin_type', '上班');
+                    const res = await fetch(`${BASE_URL}/checkin`, { method: 'POST', body: formData });
+                    const data = await res.json();
+                    if (res.ok && data.code === 200 && data.data.is_success) {
+                        updateCheckinStatus(CHECKIN_STATUS.SUCCESS, data.data);
+                        loadCheckinRecords();
+                    } else {
+                        updateCheckinStatus(CHECKIN_STATUS.FAIL);
+                    }
+                } catch (err) {
+                    console.error('自动打卡失败:', err);
+                    updateCheckinStatus(CHECKIN_STATUS.FAIL);
+                }
+            }
+
+            // ========== 摄像头控制 ==========
+            async function openCamera() {
+                if (isCameraOpen || isRequestingCamera || !isModelLoaded) return;
+                try {
+                    isRequestingCamera = true;
+                    updateButtonStatus();
+                    showLoading("启动摄像头中...");
+                    stream = await navigator.mediaDevices.getUserMedia({
+                        video: { facingMode: 'user', width: 1280, height: 720 }
+                    });
+                    video.srcObject = stream;
+                    await new Promise(resolve => video.onloadedmetadata = resolve);
+
+                    isCameraOpen = true;
+                    videoWrapper.classList.add('camera-active');
+
+                    if (detectionLoopId) cancelAnimationFrame(detectionLoopId);
+                    detectionLoopId = requestAnimationFrame(detectionLoop);
+
+                    updateSystemStatus(true, "摄像头已启动");
+                    updateCheckinStatus(CHECKIN_STATUS.DETECTING);
+                    hideLoading();
+                } catch (err) {
+                    console.error("摄像头启动失败:", err);
+                    hideLoading();
+                    showResultModal(false, "摄像头启动失败", "请允许摄像头权限，或检查设备是否正常", err.message);
+                } finally {
+                    isRequestingCamera = false;
+                    updateButtonStatus();
+                }
+            }
+
+            function closeCamera() {
+                if (!isCameraOpen) return;
+                if (detectionLoopId) {
+                    cancelAnimationFrame(detectionLoopId);
+                    detectionLoopId = null;
+                }
+                if (stream) stream.getTracks().forEach(track => track.stop());
+                isCameraOpen = false;
+                stream = null;
+                continuousFaceFrame = 0;
+                videoWrapper.classList.remove('camera-active');
+
+                ctx.fillStyle = '#000';
+                ctx.fillRect(0, 0, faceCanvas.width, faceCanvas.height);
+                faceCanvas.width = 0;
+                faceCanvas.height = 0;
+                resizeCanvas();
+                ctx.clearRect(0, 0, faceCanvas.width, faceCanvas.height);
+
+                updateSystemStatus(false, "系统就绪");
+                updateCheckinStatus(CHECKIN_STATUS.IDLE);
+                updateButtonStatus();
+                detectionStatus.innerHTML = '<i class="fas fa-user"></i><span>人脸检测：未检测</span>';
+                detectionStatus.className = 'status-item';
+            }
+
+            function handleVisibilityChange() {
+                if (!isCameraOpen) return;
+                if (document.hidden) {
+                    if (detectionLoopId) {
+                        cancelAnimationFrame(detectionLoopId);
+                        detectionLoopId = null;
+                    }
+                } else {
+                    if (!detectionLoopId) {
+                        detectionLoopId = requestAnimationFrame(detectionLoop);
+                    }
+                }
+            }
+
+            // ========== 注册与验证 ==========
+            async function registerFace() {
+                const userId = userIdInput.value.trim();
+                const userName = userNameInput.value.trim();
+                if (!userId || !userName) { showResultModal(false, "输入错误", "请填写用户ID和用户名"); return; }
+                try {
+                    showLoading("正在注册人脸，请正对摄像头...");
+                    const file = await captureImage();
+                    if (!file) return;
+                    const formData = new FormData();
+                    formData.append('user_id', userId);
+                    formData.append('user_name', userName);
+                    formData.append('file', file);
+                    const res = await fetch(`${BASE_URL}/register`, { method: 'POST', body: formData });
+                    const data = await res.json();
+                    hideLoading();
+                    if (res.ok && data.code === 200) {
+                        showResultModal(true, "注册成功", "人脸信息已录入系统", `用户ID：${userId}\n用户名：${userName}`);
+                    } else {
+                        showResultModal(false, "注册失败", data.detail || "人脸注册失败，请重试");
+                    }
+                } catch (err) {
+                    console.error('注册失败:', err);
+                    hideLoading();
+                    showResultModal(false, "注册异常", "网络错误，请检查后端服务");
+                }
+            }
+
+            async function verifyFace() {
+                const userId = userIdInput.value.trim();
+                if (!userId) { showResultModal(false, "输入错误", "请填写用户ID"); return; }
+                try {
+                    showLoading("正在验证人脸，请正对摄像头...");
+                    const file = await captureImage();
+                    if (!file) return;
+                    const formData = new FormData();
+                    formData.append('user_id', userId);
+                    formData.append('file', file);
+                    const res = await fetch(`${BASE_URL}/verify`, { method: 'POST', body: formData });
+                    const data = await res.json();
+                    hideLoading();
+
+                    if (res.ok && data.code === 200 && data.data.is_success) {
+                        const similarity = (data.data.similarity * 100).toFixed(2);
+                        const userName = data.data.user_name || userId;
+                        const now = new Date();
+                        const timeStr = `${now.getFullYear()}/${(now.getMonth()+1).toString().padStart(2,'0')}/${now.getDate().toString().padStart(2,'0')} ${now.toLocaleTimeString('zh-CN', { hour12: false })}`;
+                        const detailText = `匹配相似度：${data.data.similarity.toFixed(4)}\n验证时间：${timeStr}\n权限状态：已授予`;
+                        showResultModal(true, "验证通过", `身份确认，欢迎回来 ${userName}`, detailText);
+                        loadCheckinRecords();
+                        // 验证成功语音（不含用户名）
+                        speakText(`验证通过，${getTimeGreeting()}`);
+                    } else {
+                        showResultModal(false, "验证失败", data.detail || "人脸不匹配，请重试");
+                        speakText('验证失败');
+                    }
+                } catch (err) {
+                    console.error('验证失败:', err);
+                    hideLoading();
+                    showResultModal(false, "验证异常", "网络错误，请检查后端服务");
+                }
+            }
+
+            // ========== 管理员功能 ==========
+            function renderAdminUsers(users) {
+                if (!users || users.length === 0) {
+                    adminUsersTbody.innerHTML = '<tr><td colspan="4" class="empty-records">暂无注册用户</td></tr>';
+                    return;
+                }
+                let html = '';
+                users.forEach(user => {
+                    html += `
+                        <tr data-user-id="${user.user_id}" data-user-name="${user.user_name}">
+                            <td>${user.user_id}</td>
+                            <td>${user.user_name}</td>
+                            <td>${user.create_time}</td>
+                            <td>
+                                <div class="action-buttons">
+                                    <button class="cyber-btn btn-primary btn-small admin-query-btn"><i class="fas fa-search"></i> 查询</button>
+                                    <button class="cyber-btn btn-danger btn-small admin-delete-btn"><i class="fas fa-trash-alt"></i> 删除</button>
+                                </div>
+                            </td>
+                        </tr>
+                    `;
+                });
+                adminUsersTbody.innerHTML = html;
+                document.querySelectorAll('.admin-query-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        const row = e.target.closest('tr');
+                        const userId = row.dataset.userId;
+                        const userName = row.dataset.userName;
+                        document.querySelectorAll('#adminUsersTbody tr').forEach(tr => tr.classList.remove('selected'));
+                        row.classList.add('selected');
+                        selectedUserLabel.textContent = `${userName} (${userId})`;
+                        adminQueryRecords(userId);
+                    });
+                });
+                document.querySelectorAll('.admin-delete-btn').forEach(btn => {
+                    btn.addEventListener('click', (e) => {
+                        const row = e.target.closest('tr');
+                        const userId = row.dataset.userId;
+                        const userName = row.dataset.userName;
+                        showConfirmModal(
+                            `确定要删除用户 ${userName} (${userId}) 吗？`,
+                            '此操作将永久删除该用户及其所有打卡记录，不可恢复。',
+                            () => adminDeleteUser(userId, row)
+                        );
+                    });
+                });
+            }
+
+            function renderAdminRecords(records) {
+                if (!records || records.length === 0) {
+                    adminRecordsTbody.innerHTML = '<tr><td colspan="3" class="empty-records">该用户暂无打卡记录</td></tr>';
+                    return;
+                }
+                let html = '';
+                records.forEach(rec => {
+                    const simPercent = rec.similarity ? (rec.similarity * 100).toFixed(2) + '%' : '-';
+                    html += `
+                        <tr>
+                            <td>${rec.checkin_time || '-'}</td>
+                            <td>${simPercent}</td>
+                            <td>${rec.checkin_type || '-'}</td>
+                        </tr>
+                    `;
+                });
+                adminRecordsTbody.innerHTML = html;
+            }
+
+            async function loadAdminUsers() {
+                try {
+                    adminUsersTbody.innerHTML = '<tr><td colspan="4" class="empty-records">加载中...</td></tr>';
+                    const res = await fetch(`${BASE_URL}/admin/users?password=${encodeURIComponent(adminPassword)}`);
+                    const data = await res.json();
+                    if (res.ok && data.code === 200) {
+                        renderAdminUsers(data.data.users);
+                    } else {
+                        adminUsersTbody.innerHTML = '<tr><td colspan="4" class="empty-records">加载失败，请重试</td></tr>';
+                        showResultModal(false, "加载失败", data.detail || "无法获取用户列表");
+                    }
+                } catch (err) {
+                    adminUsersTbody.innerHTML = '<tr><td colspan="4" class="empty-records">网络错误</td></tr>';
+                }
+            }
+
+            async function adminQueryRecords(userId) {
+                currentSelectedUserId = userId;
+                try {
+                    adminRecordsTbody.innerHTML = '<tr><td colspan="3" class="empty-records">加载中...</td></tr>';
+                    const res = await fetch(`${BASE_URL}/admin/records/${userId}?password=${encodeURIComponent(adminPassword)}`);
+                    const data = await res.json();
+                    if (res.ok && data.code === 200) {
+                        renderAdminRecords(data.data.records);
+                    } else {
+                        adminRecordsTbody.innerHTML = '<tr><td colspan="3" class="empty-records">查询失败</td></tr>';
+                        showResultModal(false, "查询失败", data.detail || "无法获取记录");
+                    }
+                } catch (err) {
+                    adminRecordsTbody.innerHTML = '<tr><td colspan="3" class="empty-records">网络错误</td></tr>';
+                }
+            }
+
+            async function adminDeleteUser(userId, row) {
+                try {
+                    showLoading("正在删除用户...");
+                    const res = await fetch(`${BASE_URL}/admin/users/${userId}?password=${encodeURIComponent(adminPassword)}`, {
+                        method: 'DELETE'
+                    });
+                    const data = await res.json();
+                    hideLoading();
+                    if (res.ok && data.code === 200) {
+                        showResultModal(true, "删除成功", data.message);
+                        if (currentSelectedUserId === userId) {
+                            adminRecordsTbody.innerHTML = '<tr><td colspan="3" class="empty-records">请点击“查询打卡记录”</td></tr>';
+                            selectedUserLabel.textContent = '选中用户';
+                            currentSelectedUserId = null;
+                        }
+                        loadAdminUsers();
+                        loadCheckinRecords();
+                    } else {
+                        showResultModal(false, "删除失败", data.detail || "操作失败");
+                    }
+                } catch (err) {
+                    hideLoading();
+                    showResultModal(false, "网络错误", "无法连接后端服务");
+                }
+            }
+
+            function showConfirmModal(desc, detail, onConfirm) {
+                confirmModalDesc.textContent = desc;
+                confirmModalDetail.textContent = detail;
+                confirmModal.classList.add('active');
+                const confirmHandler = () => {
+                    confirmModal.classList.remove('active');
+                    onConfirm();
+                    confirmModalConfirmBtn.removeEventListener('click', confirmHandler);
+                    confirmModalCancelBtn.removeEventListener('click', cancelHandler);
+                };
+                const cancelHandler = () => {
+                    confirmModal.classList.remove('active');
+                    confirmModalConfirmBtn.removeEventListener('click', confirmHandler);
+                    confirmModalCancelBtn.removeEventListener('click', cancelHandler);
+                };
+                confirmModalConfirmBtn.addEventListener('click', confirmHandler);
+                confirmModalCancelBtn.addEventListener('click', cancelHandler);
+            }
+
+            function adminLogout() {
+                adminAuthorized = false;
+                adminPassword = '';
+                adminAuthSection.style.display = 'block';
+                adminFunctionSection.style.display = 'none';
+                adminPasswordInput.value = '';
+                currentSelectedUserId = null;
+                selectedUserLabel.textContent = '选中用户';
+            }
+
+            function bindAdminEvents() {
+                adminLoginBtn.addEventListener('click', () => {
+                    const pwd = adminPasswordInput.value.trim();
+                    if (!pwd) {
+                        showResultModal(false, "密码错误", "请输入管理员密码");
+                        return;
+                    }
+                    adminAuthorized = true;
+                    adminPassword = pwd;
+                    adminAuthSection.style.display = 'none';
+                    adminFunctionSection.style.display = 'block';
+                    loadAdminUsers();
+                    adminRecordsTbody.innerHTML = '<tr><td colspan="3" class="empty-records">请点击“查询打卡记录”</td></tr>';
+                });
+
+                adminLogoutBtn.addEventListener('click', adminLogout);
+
+                adminPasswordInput.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') adminLoginBtn.click();
+                });
+            }
+
+            function resetAdminOnTabSwitch() {
+                if (!adminAuthorized) return;
+                adminLogout();
+            }
+
+            function bindButtonEvents() {
+                openCameraBtn.addEventListener('click', openCamera);
+                closeCameraBtn.addEventListener('click', closeCamera);
+                registerOpenCameraBtn.addEventListener('click', openCamera);
+                registerCloseCameraBtn.addEventListener('click', closeCamera);
+                registerBtn.addEventListener('click', registerFace);
+                verifyBtn.addEventListener('click', verifyFace);
+            }
+
+            // ========== 启动 ==========
+            window.addEventListener('DOMContentLoaded', () => {
+                initMuteButton();
+                initFaceDetection();
+                updateCurrentTime();
+                setInterval(updateCurrentTime, 1000);
+                loadCheckinRecords();
+                modalConfirmBtn.addEventListener('click', closeResultModal);
+                resizeCanvas();
+                window.addEventListener('resize', resizeCanvas);
+                bindButtonEvents();
+                bindAdminEvents();
+                userIdInput.addEventListener('input', updateButtonStatus);
+                document.addEventListener('visibilitychange', handleVisibilityChange);
+            });
+
+            tabBtns.forEach(btn => {
+                btn.addEventListener("click", () => {
+                    const targetTab = btn.dataset.tab;
+                    tabBtns.forEach(b => b.classList.remove("active"));
+                    btn.classList.add("active");
+                    tabPanels.forEach(panel => panel.classList.remove("active"));
+                    document.getElementById(`${targetTab}-panel`).classList.add("active");
+                    if (targetTab !== 'admin') {
+                        resetAdminOnTabSwitch();
+                    } else {
+                        if (adminAuthorized) {
+                            loadAdminUsers();
+                        }
+                    }
+                });
+            });
+
+        })();
+    </script>
+</body>
+</html>
