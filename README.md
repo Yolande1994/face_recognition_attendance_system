@@ -87,6 +87,10 @@ python download_models.py
 python main.py
 ```
 
+**服务启动完成后，本地浏览器访问地址：**  
+- 自动生成接口文档：http://127.0.0.1:8000/docs（仅本机可访问）  
+- 前端人脸演示页面：http://127.0.0.1:8000/index.html（仅本机可访问）  
+
 ## 项目目录结构
 face_recognition_attendance_system/  
 ├── algorithm/          # 人脸算法引擎封装  
