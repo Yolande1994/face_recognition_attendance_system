@@ -89,16 +89,16 @@ python main.py
 
 ## 项目目录结构
 face_recognition_attendance_system/  
-├── algorithm/ # 人脸算法引擎封装  
-├── core/ # 全局配置、统一异常处理  
-├── database/ # ORM 模型、数据库 CRUD 封装  
-├── schemas/ # 接口数据模型定义  
-├── utils/ # 通用工具函数  
-├── public/ # 前端静态资源与模型权重  
-├── .env.example # 环境配置模板  
-├── .gitignore # Git 忽略规则  
-├── download_models.py # 后端模型一键部署脚本  
-├── test_algorithm.py # 离线算法测试脚本  
-├── main.py # 服务启动入口  
-├── requirements.txt # 项目依赖清单  
-└── index.html # 前端演示页面  
+├── algorithm/          # 人脸算法引擎封装  
+├── core/               # 全局配置、统一异常处理  
+├── database/           # ORM模型、数据库CRUD封装  
+├── schemas/            # 接口数据模型定义  
+├── utils/              # 通用工具函数  
+├── public/             # 前端静态资源与模型权重  
+├── .env.example        # 环境配置模板  
+├── .gitignore          # Git 忽略规则  
+├── download_models.py  # 后端模型一键部署脚本  
+├── test_algorithm.py   # 离线算法测试脚本  
+├── main.py             # 服务启动入口  
+├── requirements.txt    # 项目依赖清单  
+└── index.html          # 前端演示页面  
